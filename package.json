@@ -1,0 +1,16 @@
+{
+  "name": "chrome-ext-parcel-boilerplate",
+  "version": "0.0.1",
+  "main": "index.js",
+  "repository": "https://github.com/maneman8000/chrome-ext-parcel-boilerplate",
+  "author": "Akihiro Nishiya",
+  "license": "MIT",
+  "scripts": {
+    "build": "parcel build src/panel-main.js -d src/build/",
+    "watch": "parcel watch src/panel-main.js -d src/build/"
+  },
+  "dependencies": {
+    "babel-preset-env": "^1.6.1",
+    "parcel-bundler": "^1.7.1"
+  }
+}
