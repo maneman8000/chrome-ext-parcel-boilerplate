@@ -1,25 +1,69 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { Button, Row, Col, Input, Table } from 'antd';
+import 'antd/dist/antd.css';
 
 class App extends React.Component {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
+    this.state = {
+      listeners: []
+    };
     this.handleGetListeners = this.handleGetListeners.bind(this);
+    this.columns = [
+      {
+        title: 'Selector',
+        dataIndex: 'selector',
+        key: 'selector'
+      },
+      {
+        title: 'Events',
+        dataIndex: 'events',
+        key: 'events'
+      }
+    ];
+  }
+
+  readCode(filename) {
+    return new Promise((resolve, reject) => {
+      const onError = () => {
+        reject();
+      };
+      chrome.runtime.getPackageDirectoryEntry((root) => {
+        root.getFile(filename, {}, (fileEntry) => {
+          fileEntry.file((file) => {
+            var reader = new FileReader();
+            reader.onloadend = function(e) { resolve(this.result); };
+            reader.readAsText(file);
+          }, onError);
+        }, onError);
+      });
+    });
   }
 
   handleGetListeners() {
-    const expr = 'console.log("test eval", getEventListeners)';
-    chrome.devtools.inspectedWindow.eval(expr, (isLoaded, isException) => {
-      if (isException) {
-        throw new Error('Eval failed for ' + expr);
-      }
-      console.log('eval success!', isLoaded);
+    this.readCode("src/get-event-listeners.js").then((expr) => {
+      chrome.devtools.inspectedWindow.eval(expr, (data, isException) => {
+        if (isException) {
+          throw new Error('Eval failed for ' + expr);
+        }
+        console.log('eval success!', data);
+        this.setState({
+          listeners: data.result.map((d, i) => {
+            return {
+              key: String(i),
+              selector: d.selector,
+              events: d.events.join(', ')
+            };
+          })
+        });
+      });
     });
   }
 
   handleReload() {
     const options = {
-      ignoreCache: true
+       ignoreCache: true
     };
     chrome.devtools.inspectedWindow.reload(options);
   }
@@ -27,7 +71,22 @@ class App extends React.Component {
   render() {
     return (
       <div className="app">
-        <button class='button' onClick={this.handleGetListeners}>Get Listeners</button>
+        <Row>
+          <Col span={6}>
+            <Button type="primary" onClick={this.handleGetListeners}>Get Listeners</Button>
+          </Col>
+          <Col span={6}>
+            <Button type="primary" onClick={this.handleReload}>Reload</Button>
+          </Col>
+          <Col span={6}>
+            <Input placeholder="params" />
+          </Col>
+        </Row>
+        <Row>
+          <Col>
+            <Table dataSource={this.state.listeners} columns={this.columns} />
+          </Col>
+        </Row>
       </div>
     );
   }
