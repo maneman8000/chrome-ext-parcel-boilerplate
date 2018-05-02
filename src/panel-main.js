@@ -7,9 +7,12 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      listeners: []
+      listeners: [],
+      params: ''
     };
     this.handleGetListeners = this.handleGetListeners.bind(this);
+    this.handleReload = this.handleReload.bind(this);
+    this.handleParamsChange = this.handleParamsChange.bind(this);
     this.columns = [
       {
         title: 'Selector',
@@ -62,10 +65,24 @@ class App extends React.Component {
   }
 
   handleReload() {
-    const options = {
-       ignoreCache: true
-    };
-    chrome.devtools.inspectedWindow.reload(options);
+    const params = this.state.params;
+    if (params && params.match(/.+=.+/)) {
+      const jsCode = `
+const params = "${params}";
+if (location.href.match(/\\?/)) {
+  location.href += '&' + params;
+} else {
+  location.href += '?' + params;
+}
+`;
+      chrome.tabs.executeScript({
+        code: jsCode
+      });
+    }
+  }
+
+  handleParamsChange(e) {
+    this.setState({ params: e.target.value });
   }
 
   render() {
@@ -79,7 +96,7 @@ class App extends React.Component {
             <Button type="primary" onClick={this.handleReload}>Reload</Button>
           </Col>
           <Col span={6}>
-            <Input placeholder="params" />
+            <Input placeholder="params" value={this.state.params} onChange={this.handleParamsChange} />
           </Col>
         </Row>
         <Row>
